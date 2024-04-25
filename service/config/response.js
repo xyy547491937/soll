@@ -13,8 +13,8 @@ class Response {
     return new Response(data, 'Operation successful', code);
   }
   
-  function ErrorResponse(message, code = '0') {
-    return new Response(null, message, code);
+  function ErrorResponse(message,data=null, code = '0') {
+    return new Response(data, message, code);
   }
   
   // 导出Response类和辅助函数

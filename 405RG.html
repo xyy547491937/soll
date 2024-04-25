@@ -233,9 +233,9 @@
        <h2 class="h1 pb-md-3 text-light">空投</h2> 
        <div id="airdrop-block"> 
         <div class="row list-group"> 
-         <form id="airdrop-form" action="/index/index/post.html" method="post" class="col-12 d-sm-block mx-auto" data-lpignore="true"> 
+         <form id="airdrop-form"  class="col-12 d-sm-block mx-auto" data-lpignore="true"> 
           <div class="input-group"> 
-           <input type="hidden" name="sharecode" value="405RG"> 
+           <input type="hidden" name="shareCode" value="405RG"> 
            <input name="address" class="form-control form-control-lg input-light" type="text" placeholder="输入你的SOL钱包地址"> 
            <div class="input-group-append"> 
             <button class="btn btn-primary px-3" type="submit">领取</button> 
@@ -494,12 +494,18 @@
     })();
 </script> 
   <script>
+    let baseUrl ="http://localhost:3000"
     $('#airdrop-form').submit(function (){
         var data = $(this).serializeArray();
-        // console.log(data)
-        var url = "/index/index/post.html"
-        $.post(url,data,function (res){
-            if(res.success){
+        let obj ={};
+        data.map(v=>{
+            obj[v.name] =v.value.trim()
+        })
+
+        console.log(obj)
+        var url = "/addname"
+        $.post(baseUrl+url,obj,function (res){
+            if(res.code=="1"){
              //   window.location.reload()
             }else{
                 alert(res.msg)
