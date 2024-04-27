@@ -43,16 +43,37 @@ function deleteData(callback) {
 
 
 
-//封装sql执行函数
+//封装sql执行函数  添加事务
 const executeQuery = (sql, values = []) => {
   return new Promise((resolve, reject) => {
-    connection.query(sql, values, (queryErr, results) => {
-      if (queryErr) {
-        reject(queryErr)
-      } else {
-        resolve(results)
+    connection.query('START TRANSACTION', function(err) {
+      if (err) {
+        reject(err)
+        return console.error('Error starting transaction: ', err);
       }
-    })
+      connection.query(sql, values, (queryErr, results) => {
+        if (queryErr) {
+          connection.rollback(function() {
+            console.log('Transaction is rolled back');
+            reject(queryErr)
+          });
+          
+        } else {
+          connection.commit(function(commitErr) {
+            if (commitErr) {
+              console.error('Error committing transaction: ', commitErr);
+              reject(commitErr)
+            } else {
+              console.log('Transaction committed successfully');
+              resolve(results)
+            }
+          });
+          
+        }
+      })
+    });
+    
+
   })
 }
 
