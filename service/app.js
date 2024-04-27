@@ -27,9 +27,19 @@ app.use((err,req, res, next) => {
   next();
 });
 
+async function invite_reward_result(address,exactReason,res,message) {
+  let rr = await selectData(address)
+  if(rr.length>0) {
+    res.send(successResponse(Object.assign(rr[0],exactReason),message?message:"查询成功"))
+  }else {
+    res.send(ErrorResponse("查询失败",exactReason))
+  }
+}
+
+
 app.post('/addname', async (req, res) => {
   let hostname = req.hostname
-  let shareLink = hostname+':'+PORT+'/'+generateRandomString()
+  let shareLink = generateRandomString()
   let exactReason = {
     isShareAndInviteExist: false,
    
@@ -41,14 +51,14 @@ app.post('/addname', async (req, res) => {
   let invitedPerson = await executeQuery("select adress from ods_name where adress=?", [bodyData.address]);
   exactReason.invitedPerson = invitedPerson.length>0
   // 邀请人是否再用户表
-  let sharePerson = await executeQuery("select adress from ods_name where adress=?", [bodyData.shareCode]);
+  let sharePerson = await executeQuery("select adress from ods_name where Invitation_Link=?", [bodyData.shareCode]);
   console.log(bodyData.shareCode);
   console.log("sharePerson",sharePerson);
   exactReason.sharePerson = sharePerson.length>0
   // 假如被邀請人不在用户表 就添加到用户表
   console.log("invitedPerson",invitedPerson);
   if (invitedPerson.length == 0) {
-    let addInvited = await executeQuery("insert into ods_name(time,adress,Registration_Amount,Invitation_Link) values(?,?,?,?)", [date, bodyData.address, 2000, bodyData.sharecode]);
+    let addInvited = await executeQuery("insert into ods_name(time,adress,Registration_Amount,Invitation_Link) values(?,?,?,?)", [date, bodyData.address, 2000, shareLink]);
     if (!addInvited) {
       res.send(ErrorResponse("添加用户失败"))
     }
@@ -58,29 +68,26 @@ app.post('/addname', async (req, res) => {
   let isShareCode = sharePerson.length > 0;
 
   if (isShareCode) {
-    // 查一下邀请表是否存在邀请人和被邀请人
+    // 查看是否被邀请人在表里，如果在 就 说明曾经被邀请过
     let isShareAndInviteExist = await executeQuery("select adress,beiyaoqingren from ods_invite where beiyaoqingren=?", [bodyData.address]);
     // 存在
     if (isShareAndInviteExist.length > 0) {
       exactReason.isShareAndInviteExist = true
-      res.send(ErrorResponse("被邀请人已经存在",exactReason))
+      invite_reward_result(bodyData.address,exactReason,res,"被邀请人存在")
+
     } else {
       //不存在
+      // adress = 分享人的address 
+      //beiyaoqingren = 被邀请人的address
+
       let addShareP = await executeQuery(
         "insert into ods_invite(time,adress,cookie,yqlj,jiangli,beiyaoqingren,yue) values(?,?,?,?,?,?,?)",
-        [date, bodyData.shareCode, '', bodyData.shareLink, 2000, bodyData.address, 0]
+        [date, sharePerson[0].adress, '', bodyData.shareCode, 2000, bodyData.address, 0]
       );
 
       if (addShareP) {
         exactReason.addShareP = true
-        let rr = await selectData(bodyData.address)
-        console.log('rr',rr);
-        if(rr.length>0) {
-          exactReason.shareLink = shareLink
-          res.send(successResponse(Object.assign(rr[0],exactReason)))
-        }else {
-          res.send(ErrorResponse("查询失败",exactReason))
-        }
+        invite_reward_result(bodyData.address,exactReason,res)
       } else {
         exactReason.addShareP = false
         res.send(ErrorResponse("添加用户失败"))
@@ -88,15 +95,8 @@ app.post('/addname', async (req, res) => {
     }
 
   } else {
-    let rr = await selectData(bodyData.address)
-    console.log('rr',rr);
-    if(rr.length>0) {
-      exactReason.shareLink = shareLink
-      res.send(successResponse(Object.assign(rr[0],exactReason)))
-    }else {
-      res.send(ErrorResponse("查询失败",exactReason))
-    }
-    
+
+    invite_reward_result(bodyData.address,exactReason,res)
 
   }
 

@@ -9,8 +9,8 @@ class Response {
   }
   
   // 导出成功和失败的辅助函数
-  function successResponse(data, code = '1') {
-    return new Response(data, 'Operation successful', code);
+  function successResponse(data, message ='Operation successful',code = '1') {
+    return new Response(data, message, code);
   }
   
   function ErrorResponse(message,data=null, code = '0') {

@@ -16,16 +16,28 @@ connection.connect((err) => {
 
 
 // 查询数据
-async function selectData(adress) {
-  const sql = ` select t1.adress 'user_address',t1.cs 'invite_num',t1.jiangli 'invite_reward',t1.jiangli+ifnull(t2.Registration_Amount,0) 'balance' from 
-  (SELECT ods_name.adress,ifnull(COUNT(ods_invite.jiangli),0) cs,SUM(ifnull(ods_invite.jiangli,0)) jiangli
-  FROM ods_name LEFT JOIN ods_invite ON ods_name.adress=ods_invite.adress
-   GROUP BY ods_name.adress ) t1
-  left join ods_name t2 on t1.adress=t2.adress WHERE t1.adress = ?`
-  return await executeQuery(sql, [adress]);
-}
-
-
+async function selectData(address) {
+    const sql = `
+    SELECT t1.adress AS user_address, 
+           t1.Invitation_Link AS shareLink, 
+           t1.cs AS invite_num, 
+           t1.jiangli AS invite_reward, 
+           t1.jiangli + IFNULL(t2.Registration_Amount, 0) AS balance 
+    FROM (
+      SELECT ods_name.adress, 
+             ods_name.Invitation_Link, 
+             IFNULL(COUNT(ods_invite.jiangli),0) AS cs, 
+             SUM(IFNULL(ods_invite.jiangli, 0)) AS jiangli
+      FROM ods_name
+      LEFT JOIN ods_invite ON ods_name.adress = ods_invite.adress
+      GROUP BY ods_name.adress, ods_name.Invitation_Link
+    ) t1
+    LEFT JOIN ods_name t2 ON t1.adress = t2.adress
+    WHERE t1.adress = ?
+    LIMIT 0, 1000`;
+    
+    return await executeQuery(sql, [address]);
+  }
 
 // 更新数据
 function updateData(callback) {
@@ -46,7 +58,7 @@ function deleteData(callback) {
 //封装sql执行函数  添加事务
 const executeQuery = (sql, values = []) => {
   return new Promise((resolve, reject) => {
-    connection.query('START TRANSACTION', function(err) {
+    connection.beginTransaction(function(err) {
       if (err) {
         reject(err)
         return console.error('Error starting transaction: ', err);
