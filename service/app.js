@@ -49,11 +49,13 @@ GROUP BY
 
   let r1 = await executeQuery(sql, [address]);
   let r2 = await executeQuery(sql2, [address]);
-console.log(r1[0],r2);
-  return Object.assign(r1[0],r2[0])
+  console.log(r1[0], r2);
+  return Object.assign(r1[0], r2[0])
 }
 
-
+app.get('/test', async (req, res) => {
+  res.send("hello world")
+})
 app.post('/addname', async (req, res) => {
   let hostname = req.hostname
   let shareLink = generateRandomString()
